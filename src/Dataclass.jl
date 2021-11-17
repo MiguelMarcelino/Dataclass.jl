@@ -1,4 +1,4 @@
-module DataClass
+module Dataclass
 export @dataclass
 
 macro dataclass(expr::Expr)
@@ -14,11 +14,16 @@ macro dataclass(expr::Expr)
     for field in raw_fields
         field isa LineNumberNode && continue
 
-        if isa(field, Expr) && length(field.args) == 2 && isa(field.args[1], Symbol)
+        if isa(field, Expr) &&
+           length(field.args) == 2 &&
+           isa(field.args[1], Symbol)
             name = field.args[1]
-            type = (field.head == :(::)) ? Core.eval(__module__, field.args[2]) : (type = field.args[2])
+            type =
+                (field.head == :(::)) ? Core.eval(__module__, field.args[2]) :
+                (type = field.args[2])
             # save _initvars
-            (name != :(_initvars)) ? push!(fields, :($(name)::$(type))) : initvars = type
+            (name != :(_initvars)) ? push!(fields, :($(name)::$(type))) :
+            initvars = type
         end
 
     end
@@ -27,7 +32,7 @@ macro dataclass(expr::Expr)
     fields = Tuple(fields)
 
     quote
-        # If _frozen is true, should we not allow __init__(self) to be created and 
+        # If _frozen is true, should we not allow __init__(self) to be created and
         # remove mutable attribute from the struct?
 
         # Struct definition
@@ -44,7 +49,10 @@ macro dataclass(expr::Expr)
         # Dataclass Functions
         # __init__
         if $(esc(_init))
-            function $(esc(:(__init__)))($(esc(:(self)))::$(esc(structName)), $(map(esc, fields)...))
+            function $(esc(:(__init__)))(
+                $(esc(:(self)))::$(esc(structName)),
+                $(map(esc, fields)...),
+            )
                 fNames = fieldnames($(esc(structName)))
                 for (field, fName) in zip([$(map(esc, fields)...)], fNames)
                     setfield!(self, fName, field)
@@ -68,29 +76,44 @@ macro dataclass(expr::Expr)
 
         # __eq__
         if $(esc(_eq))
-            function $(esc(:(__eq__)))($(esc(:(self)))::$(esc(structName)), $(esc(:(other)))::$(esc(structName)))
+            function $(esc(:(__eq__)))(
+                $(esc(:(self)))::$(esc(structName)),
+                $(esc(:(other)))::$(esc(structName)),
+            )
                 return $(esc(:__key))(self) == $(esc(:__key))(other)
             end
         end
 
         if $(esc(_order))
             # __lt__
-            function $(esc(:(__lt__)))($(esc(:(self)))::$(esc(structName)), $(esc(:(other)))::$(esc(structName)))::Bool
+            function $(esc(:(__lt__)))(
+                $(esc(:(self)))::$(esc(structName)),
+                $(esc(:(other)))::$(esc(structName)),
+            )::Bool
                 return $(esc(:__key))(self) < $(esc(:__key))(other)
             end
 
             # __le__
-            function $(esc(:(__le__)))($(esc(:(self)))::$(esc(structName)), $(esc(:(other)))::$(esc(structName)))::Bool
+            function $(esc(:(__le__)))(
+                $(esc(:(self)))::$(esc(structName)),
+                $(esc(:(other)))::$(esc(structName)),
+            )::Bool
                 return $(esc(:__key))(self) <= $(esc(:__key))(other)
             end
 
             # __gt__
-            function $(esc(:(__gt__)))($(esc(:(self)))::$(esc(structName)), $(esc(:(other)))::$(esc(structName)))::Bool
+            function $(esc(:(__gt__)))(
+                $(esc(:(self)))::$(esc(structName)),
+                $(esc(:(other)))::$(esc(structName)),
+            )::Bool
                 return $(esc(:__key))(self) > $(esc(:__key))(other)
             end
 
             # __ge__
-            function $(esc(:(__ge__)))($(esc(:(self)))::$(esc(structName)), $(esc(:(other)))::$(esc(structName)))::Bool
+            function $(esc(:(__ge__)))(
+                $(esc(:(self)))::$(esc(structName)),
+                $(esc(:(other)))::$(esc(structName)),
+            )::Bool
                 return $(esc(:__key))(self) >= $(esc(:__key))(other)
             end
         end
@@ -103,7 +126,9 @@ macro dataclass(expr::Expr)
                 # - If a class does not define an __eq__() method it should not define a __hash__() operation either --> OK
                 # - If it defines __eq__() but not __hash__(), its instances will not be usable as items in hashable collections --> Not covered here
                 # - If a class defines mutable objects and implements an __eq__() method, it should not implement __hash__() --> OK
-                function $(esc(:(__hash__)))($(esc(:(self)))::$(esc(structName)))
+                function $(esc(:(__hash__)))(
+                    $(esc(:(self)))::$(esc(structName)),
+                )
                     return hash($(esc(:__key))(self))
                 end
             end
